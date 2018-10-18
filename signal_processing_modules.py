@@ -101,7 +101,7 @@ def diagnose_peak_finding(signal_generator , n_samples):
 
 
 #get all subject data
-directory_for_subjects = '/my_directory'
+directory_for_subjects ='/media/sinan/9E82D1BB82D197DB/RESEARCH VLAB work on/Gyroscope SCG project/Deep Learning Paper Code and Materials/Training Data Analog Acc'
 all_subject_instances = utility.load_subjects(directory_for_subjects, store_in_ram=False )
 
 #make a train and val generator
