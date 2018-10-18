@@ -31,7 +31,7 @@ config_testing = {
 }
 
 file_name_pre = 'mdl_Unet4l_axyz_09_Oct_02'
-directory = ''/my_directory'
+directory = '/my_directory'
 fileObject = open(directory + '/Code Output/'+file_name_pre+'_pickle','rb')
 (config, _ , _, _, _ ) = pickle.load(fileObject)
 
