@@ -31,7 +31,7 @@ config_testing = {
 }
 
 file_name_pre = 'mdl_Unet4l_axyz_09_Oct_02'
-directory = '/media/sinan/9E82D1BB82D197DB/RESEARCH VLAB work on/Gyroscope SCG project/Deep Learning Paper Code and Materials'
+directory = ''/my_directory'
 fileObject = open(directory + '/Code Output/'+file_name_pre+'_pickle','rb')
 (config, _ , _, _, _ ) = pickle.load(fileObject)
 
