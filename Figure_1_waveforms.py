@@ -22,7 +22,7 @@ config = {
              'down_sample_factor':4,
             'frame_length' : 4*F_SAMPLING,
              'kernel_size': 7 , #(3,5) , #5,#(3,5), #5, #(3, 5),#5
-             'directory':'/media/sinan/9E82D1BB82D197DB/RESEARCH VLAB work on/Gyroscope SCG project/Deep Learning Paper Code and Materials',
+             'directory':'/my_directory',
              'cycle_per_batch':2,
              'filter_number':64,
             'sig_type_source': [ 'aX' , 'aY' , 'aZ'],
