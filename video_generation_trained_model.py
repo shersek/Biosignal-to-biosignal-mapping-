@@ -17,7 +17,7 @@ import matplotlib.animation as animation
 
 
 file_name_pre = 'mdl_Unetx1_axyz_11_Oct_07'
-directory = '/my_directory'
+directory = '/media/sinan/9E82D1BB82D197DB/RESEARCH VLAB work on/Gyroscope SCG project/Deep Learning Paper Code and Materials'
 fileObject = open(directory + '/Code Output/'+file_name_pre+'_pickle','rb')
 (config, train_history , valid_history, train_subject_instances, val_subject_instances ) = pickle.load(fileObject)
 number_of_videos=2
