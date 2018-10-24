@@ -160,14 +160,3 @@ with open(directory + '/Code Output/' + file_name_pre + '_config.txt', "w") as t
 #model diagnosis
 network_models.show_loss_torch_model(train_history, valid_history, file_name_pre , directory+'/Code Output')
 
-#TODO
-#try head to foot to bcg again train overnight !
-#increase number of filters and maybe add dropout later
-#GO EVEN DEEPER !!!
-#try on HF data
-# lms/rls compare, linear compare
-#multi signal in multi signal out
-#other metrics: correlation, dot product etc
-#rnn
-
-#head to foot -> bcg was not bad at all after 200 epocsh
