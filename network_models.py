@@ -378,10 +378,27 @@ class Unet_xl(nn.Module):
 
         encoded = []
         #print(x.shape)
+
+
+
         for u in range(self.layer_number):
+            # print('Input')
+            # print(x)
+            # print('')
+
             x = self.encoder[u](x)
+
+            # print('Encoder ' + str(u))
+            # print(x)
+            # print('')
+
             encoded.append(x)
             x=F.max_pool1d(self.drops_encoder[u](x),2)
+
+            # print('Max Pool Drop' + str(u))
+            # print(x)
+            # print('')
+
             #print(x.shape)
 
         x= self.conv_middle(x)
@@ -391,16 +408,45 @@ class Unet_xl(nn.Module):
         #print(x.shape)
 
         for u in reversed(range(self.layer_number)):
+            # print('Input to Decoder' + str(u))
+            # print(x)
+            # print('')
+
             x = self.conv_tr[u](x)
+
+            # print('Transpose Conv ' + str(u))
+            # print(x)
+            # print('')
+
             x = self.drops_decoder[u](x)
+
+            # print('Dropout Decoder')
+            # print(x)
+            # print('')
+
             # print(self.conv_tr[u](x).shape)
             x = self.decoder[u](torch.cat([encoded[u], x], 1))
+
+            # print('Decoder ')
+            # print(x)
+            # print('')
+
             #print(x.shape)
 
         x = self.conv_final(x)
+
+        # print('')
+        # print(x)
+        # print('')
+
         #print(x.shape)
 
         x = self.final_sigmoid(x)
+
+
+        # print('')
+        # print(x)
+        # print('')
         #print(x.shape)
 
         return x
@@ -420,15 +466,36 @@ class PearsonRLoss(nn.Module):
         outputs_hat = outputs-torch.mean(outputs,dim=1).view(-1,1)
         targets_hat = targets - torch.mean(targets, dim=1).view(-1,1)
 
+        # print('outputs_hat')
+        # print(outputs_hat)
+        # print('targets_hat')
+        # print(targets_hat)
+
         outputs_norm = torch.sqrt(outputs_hat.pow(2).sum(dim=1).view(-1,1))
         targets_norm = torch.sqrt(targets_hat.pow(2).sum(dim=1).view(-1,1))
 
+        # print('outputs_norm')
+        # print(outputs_norm)
+        # print('targets_norm')
+        # print(targets_norm)
+
         outputs_0_mean_unit_norm = outputs_hat/outputs_norm
-        targets_0_mean_unit_norm = targets_hat / targets_norm
+        targets_0_mean_unit_norm = targets_hat / targets_norm #some target signal segments are 0 ...
+
+        # print('outputs_0_mean_unit_norm')
+        # print(outputs_0_mean_unit_norm)
+        # print('targets_0_mean_unit_norm')
+        # print(targets_0_mean_unit_norm)
 
         #elementwise multiply
         #pearsonr_r_batch = torch.abs((outputs_0_mean_unit_norm*targets_0_mean_unit_norm).sum(dim=1))
         pearsonr_r_batch = (outputs_0_mean_unit_norm*targets_0_mean_unit_norm).sum(dim=1)
+
+        # print('pearsonr_r_batch')
+        # print(pearsonr_r_batch)
+
+        # if torch.isnan(pearsonr_r_batch).sum()!=0:
+        #     a=1
 
         return -pearsonr_r_batch.mean()
 
@@ -483,8 +550,8 @@ def train_torch_generator_with_video(args, sig_model, criterion, train_gen, val_
                 inputs = cuda(inputs)
                 inputs = inputs.type(torch.cuda.FloatTensor)
 
-
                 outputs = sig_model(inputs).squeeze()
+
                 #print(outputs)
                 del inputs
 
@@ -555,9 +622,9 @@ def train_torch_generator_with_video(args, sig_model, criterion, train_gen, val_
             print('Ctrl+C, saving snapshot')
             #save(epoch)
             print('done.')
-            return train_history, valid_history
+            return train_history, valid_history, best_val
 
-    return train_history, valid_history
+    return train_history, valid_history, best_val
 
 
 

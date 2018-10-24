@@ -14,17 +14,17 @@ import time
 F_SAMPLING=2000
 
 config = {
-             'file_name_pre': 'mdl_00000_a000_17_Oct_04',  #should be 25 letters
+             'file_name_pre': 'mdl_00000_a000_23_Oct_02',  #should be 25 letters
              'mode':'both',
              'eps': 1e-3,
              'model_type': 'Unetxl',
-             'no_layers': 4 ,
+             'no_layers': 5 ,
              'down_sample_factor':4,
             'frame_length' : int(4.096*F_SAMPLING),
              'kernel_size': 7 , #(3,5) , #5,#(3,5), #5, #(3, 5),#5
-             'directory':'/my_directory',
+             'directory':'/media/sinan/9E82D1BB82D197DB/RESEARCH VLAB work on/Gyroscope SCG project/Deep Learning Paper Code and Materials',
              'cycle_per_batch':2,
-             'filter_number': 16,
+             'filter_number': 64,
             'sig_type_source': [ 'aX' , 'aY' , 'aZ'],
             'sig_type_target': 'bcg',
              'loss_func':'pearson_r',
@@ -67,7 +67,7 @@ print('Model Name: ' + file_name_pre)
 all_subject_instances = utility.load_subjects(directory + '/Training Data Analog Acc', store_in_ram )
 
 #train test split
-train_subject_instances, val_subject_instances = train_test_split( all_subject_instances  , test_size=0.2, random_state=50 )
+train_subject_instances, val_subject_instances = train_test_split( all_subject_instances  , test_size=0.2, random_state=300 ) #random_state=50
 
 #make a train and val generator
 train_gen = data_generators.make_generator_multiple_signal(list_of_subjects=train_subject_instances, cycle_per_batch=cycle_per_batch, eps=eps,frame_length=frame_length,
@@ -103,7 +103,7 @@ cudnn.benchmark = True
 
 #train model
 config['n_epochs'] = 400
-config['scheduler_milestones'] = [50,100,200]
+config['scheduler_milestones'] = [30,60,120] #[50,100,200]
 config['train_steps'] = 10
 config['val_steps'] = 10
 config['initial_lr'] = 0.001
@@ -121,7 +121,7 @@ args = {'lr': config['initial_lr'],
 }
 
 start_model_train = time.time()
-train_history, valid_history = network_models.train_torch_generator_with_video(args=args,
+train_history, valid_history , best_val= network_models.train_torch_generator_with_video(args=args,
                                          sig_model=sig_model,
                                          criterion=loss,
                                          train_gen=train_gen,
@@ -132,6 +132,7 @@ train_history, valid_history = network_models.train_torch_generator_with_video(a
 
 end_model_train = time.time()
 print('Model Training Duration In Seconds: ' + str(end_model_train - start_model_train))
+print('Best Validation Loss: ' + str(best_val))
 
 #save model
 sig_model = network_models.load_saved_model(model_path=config['model_path'],
@@ -146,7 +147,7 @@ torch.save({
     'model': sig_model.state_dict(),
 }, directory+'/Code Output/' + file_name_pre + '.pt')
 
-pickle_list = [config, train_history , valid_history, train_subject_instances, val_subject_instances ]
+pickle_list = [config, train_history , valid_history, train_subject_instances, val_subject_instances , best_val]
 fileObject = open(directory+'/Code Output/' +file_name_pre+'_pickle','wb')
 pickle.dump(pickle_list,fileObject)
 fileObject.close()
@@ -170,4 +171,3 @@ network_models.show_loss_torch_model(train_history, valid_history, file_name_pre
 #rnn
 
 #head to foot -> bcg was not bad at all after 200 epocsh
-
