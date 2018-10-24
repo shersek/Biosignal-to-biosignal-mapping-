@@ -40,13 +40,6 @@ def get_rot_matrix(rot_angle , axis):
 
 def augment_accel_signals(subject, rot_angle_x, rot_angle_y , rot_angle_z , store_in_ram=False):
 
-    # if store_in_ram:
-    #     aX_tilde = subject.aX * math.cos(rot_angle) + subject.aY * math.sin(rot_angle)
-    #     aY_tilde = -subject.aX * math.sin(rot_angle) + subject.aY * math.cos(rot_angle)
-    # else:
-    #     aX_tilde = subject.get_aX() * math.cos(rot_angle) + subject.get_aY() * math.sin(rot_angle)
-    #     aY_tilde = -subject.get_aX() * math.sin(rot_angle) + subject.get_aY() * math.cos(rot_angle)
-
     R = np.matmul(np.matmul (get_rot_matrix(rot_angle_x , 'x')   , get_rot_matrix(rot_angle_y , 'y')),  get_rot_matrix(rot_angle_z , 'z'))
 
     if store_in_ram:
@@ -76,12 +69,10 @@ def make_generator_multiple_signal(list_of_subjects, cycle_per_batch, eps, frame
 
         X_batch = np.zeros(shape=(batch_size, len(list_sig_type_source), frame_length//down_sample_factor))
         Y_batch = np.zeros(shape=(batch_size, 1, frame_length//down_sample_factor))
-        list_of_indices = []
         count = 0
         subject_id_list = []
 
         for c in range(cycle_per_batch):
-            #print(' ')
             for subject in list_of_subjects:
 
                 if mode=='rest':
@@ -114,7 +105,6 @@ def make_generator_multiple_signal(list_of_subjects, cycle_per_batch, eps, frame
                         augment_angle_x = 0
                         augment_angle_y = 0
                         augment_angle_z = 0
-                    #print(str(aug_selection) +' ' + str(augment_angle*180/math.pi))
 
                 for i,sig_type_source in enumerate(list_sig_type_source):
 
@@ -203,7 +193,6 @@ def make_generator_multiple_signal(list_of_subjects, cycle_per_batch, eps, frame
                         sig_source = sig_source - sig_filt
 
 
-                    # offset = np.random.randint(min_offset, max_offset) THIS IS NOT SUPPOSED TO BE HERE ????? !!!!! THIS WAS A HUGE BUG
                     if normalized:
                         X_batch[count, i , :] = get_raw_sig(sig_source , offset , frame_length , down_sample_factor , eps)
                     else:
@@ -352,7 +341,6 @@ def make_generator_multiple_signal_hf(list_of_recordings, batch_size , eps, fram
         sig_length = recording.ecg.shape[0]
 
         for offset in range(0,sig_length - frame_length , stride):
-            #print(str(i) + ':' + str(i+frame_length))
 
             for i,sig_type_source in enumerate(list_sig_type_source):
                 #get signal
