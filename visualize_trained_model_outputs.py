@@ -13,6 +13,7 @@ from sklearn import manifold
 from sklearn import preprocessing
 import data_generators
 
+#load model and workspace items
 file_name_pre = 'mdl_Unetx5_axyz_23_Oct_01'
 directory = '/media/sinan/9E82D1BB82D197DB/RESEARCH VLAB work on/Gyroscope SCG project/Deep Learning Paper Code and Materials'
 fileObject = open(directory + '/Code Output/'+file_name_pre+'_pickle','rb')
@@ -20,7 +21,12 @@ fileObject = open(directory + '/Code Output/'+file_name_pre+'_pickle','rb')
 save_true = False
 
 def visualize_signals(gen , sig_type_source ):
-
+    '''
+    plots target signal segments, source signal segments and the estimated target signal segments together
+    :param gen: data generator
+    :param sig_type_source: list of source signals e.g. ['aX', 'aY', 'aZ'] for all three axes of the accelerometer as source signals
+    :return: -
+    '''
     torch.cuda.empty_cache()
     X_batch, Y_batch, list_subjects = next(gen)
 
@@ -65,9 +71,7 @@ def visualize_signals(gen , sig_type_source ):
     del Y_batch
 
 
-
-
-
+#configs
 cycle_per_batch = config['cycle_per_batch']
 mode= config['mode']
 eps =  config['eps']
@@ -109,11 +113,9 @@ filter_number=config['filter_number']
 sig_model= network_models.load_saved_model(model_path , model_type , input_size , kernel_size  , filter_number=filter_number, signal_number=len(sig_type_source),
                                            no_layers = no_layers)
 
-
 #visualize embeddings on training set
 visualize_signals(train_gen ,sig_type_source)
 
 #visualize embeddings on validation set
 visualize_signals(val_gen  , sig_type_source)
 
-#TODO: mutli-signal in multi-signal out
