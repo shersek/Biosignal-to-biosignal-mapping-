@@ -1,20 +1,15 @@
-#!/usr/bin/env python
-""" collections of utility functions """
-
 import os
 import scipy.io as sio
 import pandas as pd
 import matplotlib.pyplot as plt
 
+#sampling rate of training dataset
 F_SAMPLING=2000
-
-
 
 class TrainingSubject(object):
     """
-        Instance class represents set of raw data collected per subject
+        Instance class represents a training subject
     """
-
     def __init__(self, dir, subject_id , store_in_ram=False):
         self.dir = dir
         self.subject_id = subject_id
@@ -47,48 +42,80 @@ class TrainingSubject(object):
             self.bp = None
 
     def _get_subject_file_name(self ):
-
+        '''
+        get the .mat file for the training subject
+        :return: string filename for the .mat file
+        '''
         return 'Filtered_Subject_' + str(self.subject_id) + '_Mid_Sternum_Rest_Exer_Rec.mat'
 
 
     def _load_rest_intervals(self):
-
-        df = pd.read_csv(self.dir + '/subject_info.csv')
+        '''
+        return the interval where the subject was at rest in the form of a list: [rest_start_time, rest_end_time] (in seconds)
+        :return: list contatining start and end of resting interval
+        '''
+        df = pd.read_csv(self.dir + '/subject_info_training.csv')
         return [F_SAMPLING*int(df['REST START'][df['SUBJECT ID'] == self.subject_id]) , F_SAMPLING*int(df['REST END'][df['SUBJECT ID'] == self.subject_id])]
 
     def _load_recovery_intervals(self):
-
-        df = pd.read_csv(self.dir + '/subject_info.csv')
+        '''
+        return the interval where the subject was recovering from exercise in the form of a list: [recovery_start_time, recovery_end_time] (in seconds)
+        :return: list contatining start and end of recovery interval
+        '''
+        df = pd.read_csv(self.dir + '/subject_info_training.csv')
         return [F_SAMPLING*int(df['RECOVERY START'][df['SUBJECT ID'] == self.subject_id]) , F_SAMPLING*int(df['RECOVERY END'][df['SUBJECT ID'] == self.subject_id])-1  ]
 
     def get_ecg(self):
-
+        '''
+        get the ecg signal for the subject including rest, exercise, recovery
+        :return: ecg signal for the subject as a numpy vector
+        '''
         mat_contents = sio.loadmat(self.dir + '/' + self.subject_file_name)
 
         return mat_contents['ecg_filtered'].reshape(-1)
 
 
     def get_aX(self ):
+        '''
+        get the accelerometer-X axis signal for the subject including rest, exercise, recovery
+        :return: aX signal for the subject as a numpy vector
+        '''
         mat_contents = sio.loadmat(self.dir + '/' + self.subject_file_name)
 
         return mat_contents['ax_f'].reshape(-1)
 
     def get_aY(self):
+        '''
+        get the accelerometer-Y axis signal for the subject including rest, exercise, recovery
+        :return: aY signal for the subject as a numpy vector
+        '''
         mat_contents = sio.loadmat(self.dir + '/' + self.subject_file_name)
 
         return mat_contents['ay_f'].reshape(-1)
 
     def get_aZ(self):
+        '''
+        get the accelerometer-Z axis signal for the subject including rest, exercise, recovery
+        :return: aZ signal for the subject as a numpy vector
+        '''
         mat_contents = sio.loadmat(self.dir + '/' + self.subject_file_name)
 
         return mat_contents['az_f'].reshape(-1)
 
     def get_icg(self):
+        '''
+        get the impedance cardiography axis signal for the subject including rest, exercise, recovery
+        :return: impedance cardiography signal for the subject as a numpy vector
+        '''
         mat_contents = sio.loadmat(self.dir + '/' + self.subject_file_name)
 
         return mat_contents['icg_filtered'].reshape(-1)
 
     def get_bp(self):
+        '''
+        get the blood pressure signal (acquired using finapres) axis signal for the subject including rest, exercise, recovery
+        :return: blood pressure signal for the subject as a numpy vector
+        '''
         mat_contents = sio.loadmat(self.dir + '/' + self.subject_file_name)
 
 
@@ -98,29 +125,50 @@ class TrainingSubject(object):
             return None
 
     def get_bcg(self):
+        '''
+        get the ballistocardiogram signal for the subject including rest, exercise, recovery
+        :return: bcg signal for the subject as a numpy vector
+        '''
         mat_contents = sio.loadmat(self.dir + '/' + self.subject_file_name)
 
         return mat_contents['bcg_filtered'].reshape(-1)
 
 
     def get_gX(self ):
+        '''
+        get the gyroscope-X axis signal for the subject including rest, exercise, recovery
+        :return: gX signal for the subject as a numpy vector
+        '''
         mat_contents = sio.loadmat(self.dir + '/' + self.subject_file_name)
 
         return mat_contents['gyro_x_filtered'].reshape(-1)
 
     def get_gY(self):
+        '''
+        get the gyroscope-Y axis signal for the subject including rest, exercise, recovery
+        :return: gY signal for the subject as a numpy vector
+        '''
         mat_contents = sio.loadmat(self.dir + '/' + self.subject_file_name)
 
         return mat_contents['gyro_y_filtered'].reshape(-1)
 
     def get_gZ(self):
+        '''
+        get the gyroscope-Z axis signal for the subject including rest, exercise, recovery
+        :return: gZ signal for the subject as a numpy vector
+        '''
         mat_contents = sio.loadmat(self.dir + '/' + self.subject_file_name)
 
         return mat_contents['gyro_z_filtered'].reshape(-1)
 
 
 def load_subjects(dir , store_in_ram=False):
-
+    '''
+    load all training subject instances into a list
+    :param dir: directory of training files
+    :param store_in_ram: store all signals in RAM ? much faster training but consumes lots of memory
+    :return: list of training subject instances
+    '''
     unique_subjects = [int(file_name[17:20]) for file_name in
                        os.listdir(dir) if
                        file_name.startswith('Filtered')]
@@ -130,6 +178,11 @@ def load_subjects(dir , store_in_ram=False):
     return subjects
 
 def diagnose_training_subjects(list_of_subjects):
+    '''
+    plot bcg signals from list of subjects for debugging
+    :param list_of_subjects: list of subject instances
+    :return:
+    '''
     for subject in list_of_subjects:
         plt.figure()
         plt.plot(subject.bcg)

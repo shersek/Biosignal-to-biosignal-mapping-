@@ -7,6 +7,9 @@ import matplotlib.pyplot as plt
 
 
 class ConvElu(nn.Module):
+    '''
+    Conv + BatchNorm (optional) + ELU, used in encoder and decoder blocks
+    '''
     def __init__(self,filter_number_in, filter_number_out , kernel_size ,batch_norm=False ):
         super(ConvElu, self).__init__()
         self.batch_norm =batch_norm
@@ -15,8 +18,6 @@ class ConvElu(nn.Module):
         self.elu = nn.ELU(inplace=False)
 
     def forward(self, x):
-        #y = self.conv(x)
-        #y =self.elu(y)
         if self.batch_norm:
             return self.elu(self.bn(self.conv(x)))
         else:
@@ -24,6 +25,9 @@ class ConvElu(nn.Module):
 
 
 class ConvTransposeElu(nn.Module):
+    '''
+    Transpose-Conv + BatchNorm (optional) + ELU, used in decoder blocks
+    '''
     def __init__(self,filter_number_in, filter_number_out ,batch_norm=False  ):
         super(ConvTransposeElu, self).__init__()
         self.batch_norm =batch_norm
@@ -37,7 +41,6 @@ class ConvTransposeElu(nn.Module):
             return self.elu(self.bn(self.conv_transpose(x)))
         else:
             return self.elu(self.conv_transpose(x))
-
 
 
 
@@ -82,6 +85,9 @@ class DecoderBlock(nn.Module):
 
 
 class Unet_xl(nn.Module):
+    '''
+    UNet-like neural network architecture to map source signals to a target signal
+    '''
     def __init__(self,input_size, kernel_size  , filter_number , sig_number, layer_number):
 
         super().__init__()
@@ -157,10 +163,10 @@ class Unet_xl(nn.Module):
 
 
 
-
-
 class PearsonRLoss(nn.Module):
-
+    '''
+    Loss function to minimize, negative of the Pearson Correlation Coefficient
+    '''
     def __init__(self):
         super(PearsonRLoss, self).__init__()
 
@@ -185,9 +191,19 @@ class PearsonRLoss(nn.Module):
 
 
 def cuda(x):
+    '''
+    send module tensor to cuda
+    :param x: pytorch tensor
+    :return: pytorch tensor sent to cuda
+    '''
     return x.cuda(async=True) if torch.cuda.is_available() else x
 
 def get_learning_rate(optimizer):
+    '''
+    get current learning rate of optimizer
+    :param optimizer: optimizer being used
+    :return: learning rate
+    '''
     lr=[]
     for param_group in optimizer.param_groups:
         lr +=[ param_group['lr'] ]
@@ -195,7 +211,18 @@ def get_learning_rate(optimizer):
 
 
 def train_torch_generator_with_video(args, sig_model, criterion, train_gen, val_gen, init_optimizer, init_schedule ,produce_video):
-
+    '''
+    trains the pytorch model, the model with the lowest validation error is saved
+    :param args: training configs
+    :param sig_model: pytorch model
+    :param criterion: loss functions
+    :param train_gen: training data generator
+    :param val_gen: validation data generator
+    :param init_optimizer: initial optimizer
+    :param init_schedule: optimization schedule
+    :param produce_video: produce a video ? if so saves the models from each epoch
+    :return: dict of training and validation history (losses at each epoch) and the best validation score
+    '''
 
     lr = args['lr']
     n_epochs = args['n_epochs']
@@ -305,8 +332,15 @@ def train_torch_generator_with_video(args, sig_model, criterion, train_gen, val_
 
 
 
-
 def validation_binary(sig_model, criterion, val_gen , val_steps):
+    '''
+    predict on validation data with the current state of the model being trained
+    :param sig_model: current model
+    :param criterion: loss function
+    :param val_gen: validation data generator
+    :param val_steps: number of times the model tested on validation data, validation loss is the mean of the losses from each repetition
+    :return: dict validation metrics
+    '''
     with torch.no_grad():
         sig_model.eval()
         losses = []
@@ -346,8 +380,14 @@ def validation_binary(sig_model, criterion, val_gen , val_steps):
 
 
 def show_loss_torch_model(train_history, valid_history, file_name_pre , directory):
-
-
+    '''
+    plot the training loss and validation loss over the epochs of training
+    :param train_history: dictionary of training history
+    :param valid_history: dictionary of validation history
+    :param file_name_pre: str file name prefix
+    :param directory: str directory where the figure will be saved
+    :return: -
+    '''
     fig=plt.figure()
     train_loss = [ x['train_loss'] for x in train_history]
     val_loss = [ x['valid_loss'] for x in valid_history]
@@ -358,6 +398,17 @@ def show_loss_torch_model(train_history, valid_history, file_name_pre , director
 
 
 def load_saved_model(model_path ,model_type, input_size , kernel_size  , filter_number=64 , signal_number = 1 , no_layers = 1):
+    '''
+    load saved pytorch model
+    :param model_path: model directory
+    :param model_type: str model architecture
+    :param input_size: int number of samples that each signal segment input to the model has
+    :param kernel_size: size of filter in conv layers
+    :param filter_number: int n_f parameter
+    :param signal_number: int how many signals are input to the network
+    :param no_layers: int how many "levels" deep the network is
+    :return: pytorch model
+    '''
     torch.cuda.empty_cache()
     if model_type == 'Unetxl':
         model = Unet_xl(input_size, kernel_size, filter_number,signal_number,no_layers)

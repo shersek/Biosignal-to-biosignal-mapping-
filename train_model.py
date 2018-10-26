@@ -1,5 +1,4 @@
 import utility
-import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 import pickle
 from torch import nn
@@ -10,15 +9,16 @@ import data_generators
 import network_models
 import time
 
-
+#sampling rate of training dataset
 F_SAMPLING=2000
 
+#configs
 config = {
              'file_name_pre': 'mdl_00000_a000_23_Oct_02',  #should be 25 letters
              'mode':'both',
              'eps': 1e-3,
              'model_type': 'Unetxl',
-             'no_layers': 5 ,
+             'no_layers': 7 ,
              'down_sample_factor':4,
             'frame_length' : int(4.096*F_SAMPLING),
              'kernel_size': 7 , #(3,5) , #5,#(3,5), #5, #(3, 5),#5
@@ -90,18 +90,15 @@ val_gen = data_generators.make_generator_multiple_signal(list_of_subjects=val_su
 #create model
 if model_type=='Unetxl':
     sig_model = network_models.Unet_xl(input_size, kernel_size, filter_number,  len(sig_type_source) , no_layers )
-# elif model_type=='Unet_5l':
-#     sig_model = network_models.Unet_5l(input_size, kernel_size, filter_number,  len(sig_type_source) )
-# elif model_type=='Unet_4l':
-#     sig_model = network_models.Unet_4l(input_size, kernel_size, filter_number,  len(sig_type_source) )
 
-
+#make model parallel
 sig_model = nn.DataParallel(sig_model.cuda(), device_ids=[0,1])
+
+#loss function is negative pearson loss
 loss = network_models.PearsonRLoss()
+
+#training configs
 cudnn.benchmark = True
-
-
-#train model
 config['n_epochs'] = 400
 config['scheduler_milestones'] = [30,60,120] #[50,100,200]
 config['train_steps'] = 10
@@ -109,8 +106,6 @@ config['val_steps'] = 10
 config['initial_lr'] = 0.001
 config['model_path'] = directory + '/Code Output/best_so_far.pt'
 config['model_path_for_video'] = directory + '/Models for Video/' + file_name_pre
-
-
 args = {'lr': config['initial_lr'],
         'n_epochs':config['n_epochs'],
         'model_path': config['model_path'],
@@ -120,6 +115,7 @@ args = {'lr': config['initial_lr'],
         'model_path_for_video': config['model_path_for_video']
 }
 
+#train the model
 start_model_train = time.time()
 train_history, valid_history , best_val= network_models.train_torch_generator_with_video(args=args,
                                          sig_model=sig_model,
@@ -142,21 +138,21 @@ sig_model = network_models.load_saved_model(model_path=config['model_path'],
                                         filter_number=filter_number,
                                         signal_number=len(sig_type_source),
                                         no_layers = no_layers)
-
 torch.save({
     'model': sig_model.state_dict(),
 }, directory+'/Code Output/' + file_name_pre + '.pt')
 
+#save workspace
 pickle_list = [config, train_history , valid_history, train_subject_instances, val_subject_instances , best_val]
 fileObject = open(directory+'/Code Output/' +file_name_pre+'_pickle','wb')
 pickle.dump(pickle_list,fileObject)
 fileObject.close()
 
-#print results to text file
+#print configs to a test file
 with open(directory + '/Code Output/' + file_name_pre + '_config.txt', "w") as text_file:
     print(config, file=text_file)
     print('Model Training Duration In Seconds: ' + str(end_model_train - start_model_train), file=text_file)
 
-#model diagnosis
+#plot results
 network_models.show_loss_torch_model(train_history, valid_history, file_name_pre , directory+'/Code Output')
 

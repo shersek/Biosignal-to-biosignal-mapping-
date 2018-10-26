@@ -2,9 +2,21 @@ import utility
 import data_generators
 import matplotlib.pyplot as plt
 import numpy as np
-
+from scipy.signal import find_peaks
 
 F_SAMPLING=2000
+
+
+#get all subject data
+directory_for_subjects ='/media/sinan/9E82D1BB82D197DB/RESEARCH VLAB work on/Gyroscope SCG project/Deep Learning Paper Code and Materials/Training Data Analog Acc'
+all_subject_instances = utility.load_subjects(directory_for_subjects, store_in_ram=True )
+
+#make a train and val generator
+signal_generator = data_generators.make_generator_multiple_signal(list_of_subjects=all_subject_instances, cycle_per_batch=1, eps=1e-3 ,frame_length=int(4.096*F_SAMPLING),
+                                    mode='both', list_sig_type_source= [ 'ecg' ], sig_type_target= 'bcg' , down_sample_factor =4,
+                                                           normalized=True , store_in_ram=True ,
+                                                           augment_accel = False , augment_theta_lim = 10  , augment_prob=0.5)
+
 
 
 def get_R_peaks(sig_ecg):
@@ -15,9 +27,9 @@ def get_R_peaks(sig_ecg):
     '''
 
     ##write code below
+    peaks, _ = find_peaks(sig_ecg, prominence=0.6)
 
-
-    return np.array([500, 1000 , 1500, 1800])
+    return peaks
 
 def get_ensemble_avg(r_peaks, sig, n_samples):
     '''
@@ -47,11 +59,25 @@ def get_IJK_peaks(sig_ensemble_bcg):
     '''
 
     ##write code below
-    i_point = 5
-    j_point = 100
-    k_point = 300
+    peaks, _= find_peaks( sig_ensemble_bcg[0:250], prominence=0.2, threshold=0)
+    indices_peaks_sorted = np.argsort(sig_ensemble_bcg[peaks])
+    peaks_sorted = peaks[indices_peaks_sorted]
+    print(peaks)
+    j_point = peaks_sorted[-1] if len(peaks_sorted)!=0 else -1
 
-    return  i_point, j_point, k_point
+    if j_point!=-1:
+        sig_ensemble_bcg_before_j = -sig_ensemble_bcg[0:j_point]
+        peaks, _ = find_peaks(sig_ensemble_bcg_before_j, prominence=0.05, threshold=0)
+        i_point = peaks[-1] if len(peaks)!=0 else -1
+
+        sig_ensemble_bcg_after_j = -sig_ensemble_bcg[j_point:250]
+        peaks, _ = find_peaks(sig_ensemble_bcg_after_j, prominence=0.05, threshold=0)
+        k_point = peaks[0]+j_point if len(peaks)!=0 else -1
+    else:
+        i_point = -1
+        k_point = -1
+
+    return i_point, j_point, k_point
 
 def diagnose_peak_finding(signal_generator , n_samples):
     '''
@@ -100,15 +126,6 @@ def diagnose_peak_finding(signal_generator , n_samples):
         plt.show()
 
 
-#get all subject data
-directory_for_subjects = '/my_directory'
-all_subject_instances = utility.load_subjects(directory_for_subjects, store_in_ram=False )
-
-#make a train and val generator
-signal_generator = data_generators.make_generator_multiple_signal(list_of_subjects=all_subject_instances, cycle_per_batch=1, eps=1e-3 ,frame_length=int(4.096*F_SAMPLING),
-                                    mode='both', list_sig_type_source= [ 'ecg' ], sig_type_target= 'bcg' , down_sample_factor =4,
-                                                           normalized=True , store_in_ram=False ,
-                                                           augment_accel = False , augment_theta_lim = 10  , augment_prob=0.5)
 
 #run diagnostics
 diagnose_peak_finding(signal_generator , n_samples=500)
