@@ -3,21 +3,9 @@ import data_generators
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.signal import find_peaks
+from scipy.signal import resample_poly
 
 F_SAMPLING=2000
-
-
-#get all subject data
-directory_for_subjects ='/media/sinan/9E82D1BB82D197DB/RESEARCH VLAB work on/Gyroscope SCG project/Deep Learning Paper Code and Materials/Training Data Analog Acc'
-all_subject_instances = utility.load_subjects(directory_for_subjects, store_in_ram=True )
-
-#make a train and val generator
-signal_generator = data_generators.make_generator_multiple_signal(list_of_subjects=all_subject_instances, cycle_per_batch=1, eps=1e-3 ,frame_length=int(4.096*F_SAMPLING),
-                                    mode='both', list_sig_type_source= [ 'ecg' ], sig_type_target= 'bcg' , down_sample_factor =4,
-                                                           normalized=True , store_in_ram=True ,
-                                                           augment_accel = False , augment_theta_lim = 10  , augment_prob=0.5)
-
-
 
 def get_R_peaks(sig_ecg):
     '''
@@ -31,27 +19,39 @@ def get_R_peaks(sig_ecg):
 
     return peaks
 
-def get_ensemble_avg(r_peaks, sig, n_samples):
+def get_ensemble_avg(r_peaks, sig, n_samples , upsample_factor):
     '''
     take the ensemble average of a given signal
-    :param r_peaks: ECG R-peaks
+    :param r_peaks: numpy array ECG R-peaks
     :param sig: signal to ensemble average
-    :param n_samples: number of samples per beat
+    :param n_samples: int number of samples per beat (sampling rate = 500 Hz)
+    :param upsample_factor: int upsampling factor for signal segments
     :return: ensemble average waveform and a matrix contatining all beats of the ensemble
     '''
-
     ensemble_beats = np.zeros((r_peaks.shape[0] , n_samples))
     for u in range(r_peaks.shape[0] ):
-        beat = sig[ r_peaks[u] : min(r_peaks[u] + n_samples , sig.shape[0]) ]
+        beat = sig[ r_peaks[u] : min( r_peaks[u] + n_samples , sig.shape[0] ) ]
         beat = beat-np.mean(beat)
         ensemble_beats[ u, 0:beat.shape[0] ] = beat
+        if beat.shape[0]<n_samples:
+            ensemble_beats[u, beat.shape[0]:] = beat[-1]
 
+    ensemble_avg= np.mean(ensemble_beats , 0)
 
-    ensemble_avg = np.mean(ensemble_beats , 0)
+    if upsample_factor==1:
+        return ensemble_avg , ensemble_beats
+    else:
+        #upsample
+        ensemble_beats_upsampled = np.zeros((r_peaks.shape[0] , int(upsample_factor*n_samples) ) )
+        for u in range(r_peaks.shape[0] ):
+            ensemble_beats_upsampled[u,:] = resample_poly(ensemble_beats[u,:],up=upsample_factor, down=1 )
 
-    return ensemble_avg , ensemble_beats
+        #ensemble_avg = np.mean(ensemble_beats , 0)
+        ensemble_avg_upsampled = np.mean(ensemble_beats_upsampled , 0)
 
-def get_IJK_peaks(sig_ensemble_bcg):
+        return ensemble_avg_upsampled , ensemble_beats_upsampled
+
+def get_IJK_peaks(sig_ensemble_bcg , upsample_factor):
     '''
     find the BCG I, J and K points from the ensemble averaged waveform
     :param sig_ensemble_bcg: ensemble averaged BCG waveform
@@ -59,19 +59,19 @@ def get_IJK_peaks(sig_ensemble_bcg):
     '''
 
     ##write code below
-    peaks, _= find_peaks( sig_ensemble_bcg[0:250], prominence=0.2, threshold=0)
+    peaks, _= find_peaks( sig_ensemble_bcg[0:upsample_factor*150], prominence=0.1, threshold=0)
     indices_peaks_sorted = np.argsort(sig_ensemble_bcg[peaks])
     peaks_sorted = peaks[indices_peaks_sorted]
-    print(peaks)
+    #print(peaks)
     j_point = peaks_sorted[-1] if len(peaks_sorted)!=0 else -1
 
     if j_point!=-1:
         sig_ensemble_bcg_before_j = -sig_ensemble_bcg[0:j_point]
-        peaks, _ = find_peaks(sig_ensemble_bcg_before_j, prominence=0.05, threshold=0)
+        peaks, _ = find_peaks(sig_ensemble_bcg_before_j, prominence=0.025, threshold=0)
         i_point = peaks[-1] if len(peaks)!=0 else -1
 
-        sig_ensemble_bcg_after_j = -sig_ensemble_bcg[j_point:250]
-        peaks, _ = find_peaks(sig_ensemble_bcg_after_j, prominence=0.05, threshold=0)
+        sig_ensemble_bcg_after_j = -sig_ensemble_bcg[j_point:upsample_factor*250]
+        peaks, _ = find_peaks(sig_ensemble_bcg_after_j, prominence=0.025, threshold=0)
         k_point = peaks[0]+j_point if len(peaks)!=0 else -1
     else:
         i_point = -1
@@ -127,8 +127,18 @@ def diagnose_peak_finding(signal_generator , n_samples):
 
 
 
-#run diagnostics
-diagnose_peak_finding(signal_generator , n_samples=500)
+
+# #get all subject data
+# directory_for_subjects ='/media/sinan/9E82D1BB82D197DB/RESEARCH VLAB work on/Gyroscope SCG project/Deep Learning Paper Code and Materials/Training Data Analog Acc'
+# all_subject_instances = utility.load_subjects(directory_for_subjects, store_in_ram=True )
+#
+# #make a train and val generator
+# signal_generator = data_generators.make_generator_multiple_signal(list_of_subjects=all_subject_instances, cycle_per_batch=1, eps=1e-3 ,frame_length=int(4.096*F_SAMPLING),
+#                                     mode='both', list_sig_type_source= [ 'ecg' ], sig_type_target= 'bcg' , down_sample_factor =4,
+#                                                            normalized=True , store_in_ram=True ,
+#                                                            augment_accel = False , augment_theta_lim = 10  , augment_prob=0.5)
+#
+# diagnose_peak_finding(signal_generator , n_samples=500)
 
 
 ##TODO:
