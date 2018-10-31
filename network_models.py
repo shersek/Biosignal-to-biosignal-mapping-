@@ -189,6 +189,24 @@ class PearsonRLoss(nn.Module):
 
         return -pearsonr_r_batch.mean()
 
+    def get_induvidual_losses(self, outputs, targets):
+        outputs_hat = outputs-torch.mean(outputs,dim=1).view(-1,1)
+        targets_hat = targets - torch.mean(targets, dim=1).view(-1,1)
+
+
+        outputs_norm = torch.sqrt(outputs_hat.pow(2).sum(dim=1).view(-1,1))
+        targets_norm = torch.sqrt(targets_hat.pow(2).sum(dim=1).view(-1,1))
+
+
+        outputs_0_mean_unit_norm = outputs_hat/outputs_norm
+        targets_0_mean_unit_norm = targets_hat / targets_norm
+
+
+        #elementwise multiply
+        pearsonr_r_batch = (outputs_0_mean_unit_norm*targets_0_mean_unit_norm).sum(dim=1)
+
+        return pearsonr_r_batch
+
 
 def cuda(x):
     '''

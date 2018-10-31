@@ -4,6 +4,7 @@ import math
 
 F_SAMPLING = 2000
 F_SAMPLING_HF=1000
+F_SAMPLING_TESTING=4000
 
 
 def get_raw_sig(sig, offset, frame_length, down_sample_factor ,eps):
@@ -121,10 +122,6 @@ def make_generator_multiple_signal(list_of_subjects, cycle_per_batch, eps, frame
                             else:
                                 sig_source = subject.get_aZ()
 
-                        # N = 1500
-                        # sig_filt = np.convolve(sig_source, np.ones((N,)) / N, mode='same')
-                        # sig_source = sig_source - sig_filt
-
 
                     elif sig_type_source=='aY':
 
@@ -188,9 +185,6 @@ def make_generator_multiple_signal(list_of_subjects, cycle_per_batch, eps, frame
                             sig_source = subject.gX
                         else:
                             sig_source = subject.get_gX()
-                        N = 1500
-                        sig_filt = np.convolve(sig_source, np.ones((N,)) / N, mode='same')
-                        sig_source = sig_source - sig_filt
 
 
                     if normalized:
@@ -207,9 +201,6 @@ def make_generator_multiple_signal(list_of_subjects, cycle_per_batch, eps, frame
                         sig_target = subject.aZ
                     else:
                         sig_target = subject.get_aZ()
-                    N = 1500
-                    sig_filt = np.convolve(sig_target, np.ones((N,)) / N, mode='same')
-                    sig_target = sig_target - sig_filt
                 elif sig_type_target == 'aY':
                     if store_in_ram:
                         sig_target = subject.aY
@@ -258,9 +249,6 @@ def make_generator_multiple_signal(list_of_subjects, cycle_per_batch, eps, frame
                         sig_target = subject.gX
                     else:
                         sig_target = subject.get_gX()
-                    N = 1500
-                    sig_filt = np.convolve(sig_target, np.ones((N,)) / N, mode='same')
-                    sig_target = sig_target - sig_filt
 
 
                 if normalized:
@@ -451,6 +439,7 @@ def make_generator_multiple_signal_hf(list_of_recordings, batch_size , eps, fram
         yield True, None, None, None , None
 
 
+
 def diagnose_generator_multiple_signal_hf(gen , list_sig_type_source):
     print('Diagnosing Generator..')
     finished, X_batch, Y_batch, subject_id_list, recording_id_list = next(gen) #left here
@@ -464,6 +453,153 @@ def diagnose_generator_multiple_signal_hf(gen , list_sig_type_source):
         plt.subplot(no_sigs+1, 1, 1)
         plt.plot(Y_batch[u, 0, :])
         plt.title('Subject: ' + str(subject_id_list[u]) + ' Recording: ' + str(recording_id_list[u]) + ' Index in batch: ' + str(u))
+
+        for v in range(2,no_sigs+2):
+            plt.subplot(no_sigs+1, 1, v)
+            plt.plot(X_batch[u, v-2, :])
+            plt.title(list_sig_type_source[v-2])
+
+        #plt.tight_layout()
+        plt.show()
+
+
+
+
+def make_generator_multiple_signal_testing(list_of_subjects, batch_size , eps, frame_length=4*F_SAMPLING_TESTING, stride= F_SAMPLING_HF//10, list_sig_type_source= ['aX'], sig_type_target= 'bcg'
+                   ,down_sample_factor=4 , normalized = True, store_in_ram=False):
+
+
+    X_batch = np.zeros(shape=(batch_size, len(list_sig_type_source), frame_length // down_sample_factor))
+    Y_batch = np.zeros(shape=(batch_size, 1, frame_length // down_sample_factor))
+    count = 0
+    subject_id_list = []
+
+    for subject in list_of_subjects:
+
+        for mode in ['first_interval' , 'second_interval']:
+            # print(subject.subject_id)
+            # print(mode)
+            if mode=='first_interval':
+                sig_start_index = subject.first_interval[0]
+                sig_end_index = subject.first_interval[1]
+            elif mode=='second_interval':
+                sig_start_index = subject.second_interval[0]
+                sig_end_index = subject.second_interval[1]
+
+            for offset in range(sig_start_index,sig_end_index - frame_length , stride):
+
+                for i,sig_type_source in enumerate(list_sig_type_source):
+                    #get signal
+                    if sig_type_source=='aZ':
+                        if store_in_ram:
+                            sig_source = subject.aZ
+                        else:
+                            sig_source = subject.get_aZ()
+                    elif sig_type_source=='aY':
+                        if store_in_ram:
+                            sig_source = subject.aY
+                        else:
+                            sig_source = subject.get_aY()
+
+                    elif sig_type_source == 'aX':
+                        if store_in_ram:
+                            sig_source = subject.aX
+                        else:
+                            sig_source = subject.get_aX()
+                    elif sig_type_source == 'ecg':
+                        if store_in_ram:
+                            sig_source = subject.ecg
+                        else:
+                            sig_source = subject.get_ecg()
+                    elif sig_type_source == 'bcg':
+                        if store_in_ram:
+                            sig_source = subject.bcg
+                        else:
+                            sig_source = subject.get_bcg()
+                        N=750
+                        sig_filt = np.convolve(sig_source, np.ones((N,)) / N, mode='same')
+                        sig_source = sig_source - sig_filt
+
+
+                    if normalized:
+                        X_batch[count, i , :] = get_raw_sig(sig_source , offset , frame_length , down_sample_factor , eps)
+                    else:
+                        X_batch[count, i , :] = get_raw_sig_not_normalized(sig_source , offset , frame_length , down_sample_factor , eps)
+
+
+
+
+                # get signal
+                if sig_type_target == 'aZ':
+                    if store_in_ram:
+                        sig_target = subject.aZ
+                    else:
+                        sig_target = subject.get_aZ()
+                elif sig_type_target == 'aY':
+                    if store_in_ram:
+                        sig_target = subject.aY
+                    else:
+                        sig_target = subject.get_aY()
+                elif sig_type_target == 'aX':
+                    if store_in_ram:
+                        sig_target = subject.aX
+                    else:
+                        sig_target = subject.get_aX()
+                elif sig_type_target == 'ecg':
+                    if store_in_ram:
+                        sig_target = subject.ecg
+                    else:
+                        sig_target = subject.get_ecg()
+                elif sig_type_target == 'bcg':
+                    if store_in_ram:
+                        sig_target = subject.bcg
+                    else:
+                        sig_target = subject.get_bcg()
+                    N = 1500
+                    sig_filt = np.convolve(sig_target, np.ones((N,)) / N, mode='same')
+                    sig_target = sig_target - sig_filt
+
+
+                if normalized:
+                    Y_batch[count, 0, :] = get_raw_sig(sig_target, offset, frame_length, down_sample_factor, eps)
+                else:
+                    Y_batch[count, 0, :] = get_raw_sig_not_normalized(sig_target, offset, frame_length, down_sample_factor, eps)
+
+                count += 1
+                subject_id_list.append(subject.subject_id)
+
+                if count==batch_size:
+
+                    yield False , X_batch, Y_batch , subject_id_list
+
+                    X_batch = np.zeros(shape=(batch_size, len(list_sig_type_source), frame_length // down_sample_factor))
+                    Y_batch = np.zeros(shape=(batch_size, 1, frame_length // down_sample_factor))
+                    count = 0
+                    subject_id_list = []
+
+    if count<batch_size and count>0:
+        X_batch= X_batch[0:count ,:,:]
+        Y_batch= Y_batch[0:count ,:,:]
+        subject_id_list=subject_id_list[0:count]
+        yield False, X_batch, Y_batch, subject_id_list
+
+    while True:
+        yield True, None, None, None
+
+
+def diagnose_generator_multiple_signal_testing(gen , list_sig_type_source):
+    print('Diagnosing Generator..')
+    finished, X_batch, Y_batch, subject_id_list = next(gen) #left here
+    no_sigs = X_batch.shape[1]
+    batch_size = X_batch.shape[0]
+    print(X_batch.shape)
+    for u in range(0,batch_size,2):
+
+        plt.figure(figsize=(12,8))
+
+        plt.subplot(no_sigs+1, 1, 1)
+        plt.plot(Y_batch[u, 0, :])
+        plt.title('Subject: ' + str(subject_id_list[u]) + ' Index in batch: ' + str(u))
 
         for v in range(2,no_sigs+2):
             plt.subplot(no_sigs+1, 1, v)
