@@ -14,19 +14,19 @@ F_SAMPLING=2000
 
 #configs
 config = {
-             'file_name_pre': 'mdl_00000_a000_23_Oct_02',  #should be 25 letters
+             'file_name_pre': 'mdl_00000_a000_29_Oct_01',  #should be 25 letters
+             'no_layers': 6 ,
+             'filter_number': 64,
+             'sig_type_source': ['aX', 'aY', 'aZ'],
              'mode':'both',
              'eps': 1e-3,
              'model_type': 'Unetxl',
-             'no_layers': 7 ,
              'down_sample_factor':4,
-            'frame_length' : int(4.096*F_SAMPLING),
+             'frame_length' : int(4.096*F_SAMPLING),
              'kernel_size': 7 , #(3,5) , #5,#(3,5), #5, #(3, 5),#5
              'directory':'/media/sinan/9E82D1BB82D197DB/RESEARCH VLAB work on/Gyroscope SCG project/Deep Learning Paper Code and Materials',
              'cycle_per_batch':2,
-             'filter_number': 64,
-            'sig_type_source': [ 'aX' , 'aY' , 'aZ'],
-            'sig_type_target': 'bcg',
+             'sig_type_target': 'bcg',
              'loss_func':'pearson_r',
              'produce_video' : False,
              'store_in_ram':True,
@@ -67,7 +67,7 @@ print('Model Name: ' + file_name_pre)
 all_subject_instances = utility.load_subjects(directory + '/Training Data Analog Acc', store_in_ram )
 
 #train test split
-train_subject_instances, val_subject_instances = train_test_split( all_subject_instances  , test_size=0.2, random_state=300 ) #random_state=50
+train_subject_instances, val_subject_instances = train_test_split( all_subject_instances  , test_size=0.2, random_state= 49 )
 
 #make a train and val generator
 train_gen = data_generators.make_generator_multiple_signal(list_of_subjects=train_subject_instances, cycle_per_batch=cycle_per_batch, eps=eps,frame_length=frame_length,
@@ -83,6 +83,8 @@ val_gen = data_generators.make_generator_multiple_signal(list_of_subjects=val_su
 
 
 #check !
+# print([u.subject_id for u in train_subject_instances])
+# print([u.subject_id for u in val_subject_instances])
 #utility.diagnose_training_subjects(all_subject_instances)
 #data_generators.diagnose_generator_multiple_signal(train_gen , sig_type_source)
 #data_generators.diagnose_generator_multiple_signal(val_gen , sig_type_source)
