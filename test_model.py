@@ -141,36 +141,6 @@ def test_model(gen, sig_model):
                     list_noise_var_target.append( signal_processing_modules.get_noise_variance(ensemble_avg_target, ensemble_beats_target) )
                     list_noise_var_estimate.append( signal_processing_modules.get_noise_variance(ensemble_avg_estimate, ensemble_beats_estimate ) )
 
-                # fig = plt.figure(figsize=(12, 8))
-                # plt.subplot(2, 1, 1)
-                #
-                # plt.plot(ensemble_beats_target.T, 'r', alpha=0.3)
-                # plt.plot(ensemble_avg_target, '-r', linewidth=4)
-                # plt.plot(i_point_target, ensemble_avg_target[i_point_target], 'ok')
-                # plt.text(i_point_target, ensemble_avg_target[i_point_target] + 0.05, 'I', color='red')
-                # plt.plot(j_point_target, ensemble_avg_target[j_point_target], 'ok')
-                # plt.text(j_point_target, ensemble_avg_target[j_point_target] + 0.05, 'J', color='red')
-                # plt.plot(k_point_target, ensemble_avg_target[k_point_target], 'ok')
-                # plt.text(k_point_target, ensemble_avg_target[k_point_target] + 0.05, 'K', color='red')
-                #
-                # plt.title('Subject Number: ' + str(subject_id_list[v]))
-                #
-                # plt.subplot(2, 1, 2)
-                #
-                # plt.plot(ensemble_beats_estimate.T, 'b', alpha=0.3)
-                # plt.plot(ensemble_avg_estimate, '-b', linewidth=4)
-                # plt.plot(i_point_estimate, ensemble_avg_estimate[i_point_estimate], 'ok')
-                # plt.text(i_point_estimate, ensemble_avg_estimate[i_point_estimate] + 0.05, 'I', color='blue')
-                # plt.plot(j_point_estimate, ensemble_avg_estimate[j_point_estimate], 'ok')
-                # plt.text(j_point_estimate, ensemble_avg_estimate[j_point_estimate] + 0.05, 'J', color='blue')
-                # plt.plot(k_point_estimate, ensemble_avg_estimate[k_point_estimate], 'ok')
-                # plt.text(k_point_estimate, ensemble_avg_estimate[k_point_estimate] + 0.05, 'K', color='blue')
-                #
-                # plt.title('I-error=' + str(i_error) + ' | J-error=' + str(j_error) + ' | K-error=' + str(
-                #     k_error) + ' in (ms)')
-                #
-                # plt.tight_layout()
-                # plt.show()
 
     del X_batch
     del Y_batch_predicted
