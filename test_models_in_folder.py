@@ -23,7 +23,10 @@ config_testing = {
 
 directory = '/media/sinan/9E82D1BB82D197DB/RESEARCH VLAB work on/Gyroscope SCG project/Deep Learning Paper Code and Materials'
 models_directory = directory + '/Models to Test/'
-all_models = os.listdir(models_directory)
+name_list = os.listdir(models_directory)
+full_list = [os.path.join(models_directory,i) for i in name_list]
+time_sorted_list = sorted(full_list, key=os.path.getmtime)
+all_models = [u.split('/')[-1] for u in time_sorted_list] #files in recently modified order
 model_names_pre = [u[:-3] for u in all_models]
 
 list_model_names = []
@@ -186,6 +189,9 @@ for file_name_pre in model_names_pre:
     list_pearson_r_loss, list_subject_ids, list_i_errors, list_j_errors, list_k_errors , list_noise_var_target , list_noise_var_estimate, \
     list_target_i_points, list_target_j_points, list_target_k_points , list_sdr = test_model(test_gen, sig_model)
 
+
+    print(file_name_pre)
+
     #print results mean +/- std
     print('results mean +/- std')
     print('Mean Pearson Correlation Coefficient: ' + str(np.mean(np.array(list_pearson_r_loss))) + '+/-' + str(np.std(np.array(list_pearson_r_loss))))
@@ -246,12 +252,15 @@ for file_name_pre in model_names_pre:
             robust.mad(np.array(list_noise_var_estimate))), file=text_file)
 
 
-
 #save workspace
 pickle_list = [list_model_names, list_models_pearson , list_models_i, list_models_j, list_models_k]
 fileObject = open(directory+'/Code Output/' +'model_test_results_pickle','wb')
 pickle.dump(pickle_list,fileObject)
 fileObject.close()
+
+
+# fileObject = open(directory + '/Code Output/'+'model_test_results_pickle','rb')
+# (list_model_names, list_models_pearson , list_models_i, list_models_j, list_models_k) = pickle.load(fileObject)
 
 #various results
 fig=plt.figure()
@@ -287,10 +296,10 @@ fig.savefig(directory + '/Code Output/' + 'test_models_results_4.png')
 #boxplot for pearson correlation
 list_frames = []
 for u in range(len(list_model_names)):
-    list_frames.append(pd.DataFrame(data={'Pearson': list_models_pearson[u] , 'Type': list_model_names[u][-20:-15] + list_model_names[u][-6::]}))
+    list_frames.append(pd.DataFrame(data={'Pearson': [v for v in list_models_pearson[u] if v>0] , 'Type': list_model_names[u][-20:-15] + list_model_names[u][-6::]}))
 dfr_results = pd.concat(list_frames)
 
-fig = plt.figure(figsize=(12,8));
+fig = plt.figure(figsize=(7,3));
 sns.set_style('whitegrid', {'grid.linestyle':'--'})
 ax=sns.boxplot(x='Type', y='Pearson' , data=dfr_results , linewidth=1.5  ,
                palette=sns.xkcd_palette(['cherry red' , 'cerulean blue', 'green' , 'orange', 'light purple' , 'yellow' , 'sky blue']) ,  showfliers=False )
@@ -303,19 +312,21 @@ ax.spines['right'].set_linewidth(0.5)
 ax.spines['top'].set_linewidth(0.5)
 ax.spines['bottom'].set_linewidth(0.5)
 plt.ylim(-0.25,1)
+plt.tight_layout()
 plt.show()
+plt.savefig("/media/sinan/9E82D1BB82D197DB/RESEARCH VLAB work on/Gyroscope SCG project/Deep Learning Paper Code and Materials/Results and Figures/Results_Axes_PCC.svg")
+
 
 
 #boxplot for timing intervals
 list_frames = []
 for u in range(len(list_model_names)):
-    list_frames.append(pd.DataFrame(data={'Error': list_models_i[u] , 'Model': list_model_names[u][-20:-15] + list_model_names[u][-6::]  , 'Type': 'R-I' }  ))
-    list_frames.append(pd.DataFrame(data={'Error': list_models_j[u] , 'Model': list_model_names[u][-20:-15] + list_model_names[u][-6::]  , 'Type': 'R-J' }  ))
-    list_frames.append(pd.DataFrame(data={'Error': list_models_k[u] , 'Model': list_model_names[u][-20:-15] + list_model_names[u][-6::]  , 'Type': 'R-K' }  ))
+    list_frames.append(pd.DataFrame(data={'Error': [v for v in list_models_i[u] if v>0] , 'Model': list_model_names[u][-20:-15] + list_model_names[u][-6::]  , 'Type': 'R-I' }  ))
+    list_frames.append(pd.DataFrame(data={'Error': [v for v in list_models_j[u] if v>0] , 'Model': list_model_names[u][-20:-15] + list_model_names[u][-6::]  , 'Type': 'R-J' }  ))
+    list_frames.append(pd.DataFrame(data={'Error': [v for v in list_models_k[u] if v>0] , 'Model': list_model_names[u][-20:-15] + list_model_names[u][-6::]  , 'Type': 'R-K' }  ))
 dfr_results = pd.concat(list_frames)
 
-
-fig = plt.figure(figsize=(12,8))
+fig = plt.figure(figsize=(7,3))
 sns.set_style('whitegrid', {'grid.linestyle':'--'})
 ax=sns.boxplot(x='Model', y='Error' , hue = 'Type' , data=dfr_results , linewidth=1.5  ,
                palette=sns.xkcd_palette(['cherry red' , 'cerulean blue', 'green']) ,  showfliers=False )
@@ -327,5 +338,23 @@ ax.spines['left'].set_linewidth(0.5)
 ax.spines['right'].set_linewidth(0.5)
 ax.spines['top'].set_linewidth(0.5)
 ax.spines['bottom'].set_linewidth(0.5)
-plt.ylim(-2,70)
+plt.ylim(-2,72)
+plt.tight_layout()
 plt.show()
+plt.savefig("/media/sinan/9E82D1BB82D197DB/RESEARCH VLAB work on/Gyroscope SCG project/Deep Learning Paper Code and Materials/Results and Figures/Results_Axes_Timing.svg")
+
+
+#print results table
+for v,model in enumerate(list_model_names):
+    #print results median +/- mad
+
+    print(model+' & & & &  \\\\')
+    print('Median & {:.2f} & {:.2f} & {:.2f} & {:.2f} \\\\'.format( np.median(np.array(list_models_pearson[v])) ,
+                                                                    np.median(np.array([u for u in list_models_i[v] if u > 0])),
+                                                                    np.median(np.array([u for u in list_models_j[v] if u > 0])) ,
+                                                                    np.median(np.array([u for u in list_models_k[v] if u > 0]))) )
+    print('MAD & {:.2f} & {:.2f} & {:.2f} & {:.2f} \\\\'.format( robust.mad(np.array(list_models_pearson[v])) ,
+                                                                 robust.mad(np.array([u for u in list_models_i[v] if u > 0])),
+                                                                 robust.mad(np.array([u for u in list_models_j[v] if u > 0])) ,
+                                                                 robust.mad(np.array([u for u in list_models_k[v] if u > 0]))) )
+    print('\hline\hline')
